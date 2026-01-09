@@ -23,10 +23,22 @@ var albums = []album{
 func main() {
 	r := gin.Default()
 	r.GET("/albums", get_alb)
+	r.POST("/albums", post_alb)
 	r.Run("localhost:8080")
 }
 
 
 func get_alb(a *gin.Context) {
 	a.IndentedJSON(http.StatusOK, albums)
+}
+
+func post_alb(a *gin.Context) {
+	var newAlbum album 
+	err := a.ShouldBindJSON(&newAlbum)
+	if err != nil {
+		return
+	}
+
+	albums = append(albums, newAlbum)
+	a.IndentedJSON(http.StatusCreated,newAlbum)
 }
