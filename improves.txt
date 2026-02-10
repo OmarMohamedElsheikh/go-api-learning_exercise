@@ -1,0 +1,2 @@
+1. completing endpoint (adding PUT/DELETE endpoints)
+2. adding simple preseitant file memory
