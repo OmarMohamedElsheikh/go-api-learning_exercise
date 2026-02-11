@@ -7,7 +7,14 @@ import (
 
         "strconv"
 
+		"database/sql"
+
+	_	"github.com/go-sql-driver/mysql"
+
+		"log"
 )
+
+
 
 type album struct {
 	ID string `json:"id"`
@@ -24,6 +31,21 @@ var albums = []album{
 }
 
 func main() {
+
+	db, err := sql.Open("mysql", 
+	           "root@tcp(127.0.0.1:3306)/recordings")
+	 if err != nil {
+	     log.Fatal("Error connecting to the database:", err)
+	 }
+	 defer db.Close()
+
+	 err = db.Ping()
+	 if err != nil {
+	     log.Fatal("Error pinging the database:", err)
+	 }
+
+	 log.Println("Successfully connected to the database!")
+}
 	r := gin.Default()
 	r.GET("/albums", get_alb)
 	r.GET("/albums/:id",getalbID)
@@ -34,6 +56,11 @@ func main() {
 
 func get_alb(a *gin.Context) {
 	a.IndentedJSON(http.StatusOK, albums)
+}
+
+func delete_alb(a *gin.Context) {
+	album := getalbID(a)
+	
 }
 
 func post_alb(a *gin.Context) {
@@ -53,9 +80,10 @@ func post_alb(a *gin.Context) {
 		return
 	}
 
-	newAlbum.ID = strconv.Itoa(len(albums) + 1)
+	newAlbum.ID = 
 	
-	albums = append(albums, newAlbum)
+	
+	
 	a.IndentedJSON(http.StatusCreated,newAlbum)
 }
 
