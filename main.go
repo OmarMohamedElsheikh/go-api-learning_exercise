@@ -24,12 +24,6 @@ type album struct {
 }
 
 
-var albums = []album{
-        {ID: "1", Title: "Blue Train", Artist: "John Coltrane", Price: 56.99},
-        {ID: "2", Title: "Jeru", Artist: "Gerry Mulligan", Price: 17.99},
-        {ID: "3", Title: "Sarah Vaughan and Clifford Brown", Artist: "Sarah Vaughan", Price: 39.99},
-}
-
 func main() {
 
 	db, err := sql.Open("mysql", 
@@ -53,15 +47,28 @@ func main() {
 	r.Run("localhost:8080")
 }
 
-
-func get_alb(a *gin.Context) {
-	a.IndentedJSON(http.StatusOK, albums)
-}
-
-func delete_alb(a *gin.Context) {
-	album := getalbID(a)
+func get_alb(c *gin.Context){
 	
-}
+	rows, err := db.Query("SELECT id, title, artist, price FROM albums")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer rows.Close()
+
+	var albums []Album
+
+	for rows.Next() {
+		var alb Album
+		if err := rows.Scan(&alb.ID, &alb.Title, &alb.Artist, &alb.Price); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		albums = append(albums, alb)
+	}
+
+	c.IndentedJSON(http.StatusOK, albums)
+	}
 
 func post_alb(a *gin.Context) {
 	var newAlbum album 
