@@ -75,7 +75,7 @@ func post_alb(a *gin.Context) {
 	err := a.ShouldBindJSON(&newAlbum)
 
 	if err != nil {
-		a.IndentedJSON(400,gin.H{"message": `you should follow this structure {
+		a.IndentedJSON(http.StatusBadRequest,gin.H{"message": `you should follow this structure {
 			title : album_title,
 			artist : album_artist,
 			price : non-negative price 
@@ -83,13 +83,20 @@ func post_alb(a *gin.Context) {
 		return
 	}
 	if newAlbum.Price <= 0 || newAlbum.Price > 1000 {
-		a.IndentedJSON(400, gin.H{"message": "please enter a valid price"})
+		a.IndentedJSON(http.StatusBadRequest, gin.H{"message": "please enter a valid price"})
 		return
 	}
 
-	newAlbum.ID = 
-	
-	
+	result, err := db.Exec("INSERT INTO albums (title, artist, price) VALUES (?,?,?)",newAlbum.Title, newAlbum.Artist,newAlbum.Price)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": fmt.Sprintf("POST album: %v", err),
+		})
+		return
+	}
+	id, _ := result.LastInsertId()
+	newAlbum.ID = int(id)
 	
 	a.IndentedJSON(http.StatusCreated,newAlbum)
 }
