@@ -14,10 +14,10 @@ import (
 		"fmt"
 )
 
-
+var db *sql.DB
 
 type album struct {
-	ID string `json:"id"`
+	ID int64 `json:"id"`
 	Title string `json:"title"`
 	Artist string `json:"artist"`
 	Price float64 `json:"price"`
@@ -25,7 +25,8 @@ type album struct {
 
 
 func main() {
-
+	var err error
+	
 	db, err := sql.Open("mysql", 
 	           "root@tcp(127.0.0.1:3306)/recordings")
 	 if err != nil {
@@ -39,7 +40,7 @@ func main() {
 	 }
 
 	 log.Println("Successfully connected to the database!")
-}
+
 	r := gin.Default()
 	r.GET("/albums", get_alb)
 	r.GET("/albums/:id",getalbID)
@@ -49,18 +50,18 @@ func main() {
 
 func get_alb(c *gin.Context){
 	
-	rows, err := db.Query("SELECT id, title, artist, price FROM albums")
+	rows, err := db.Query("SELECT title, artist, price FROM albums")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	defer rows.Close()
 
-	var albums []Album
+	var albums []album
 
 	for rows.Next() {
 		var alb Album
-		if err := rows.Scan(&alb.ID, &alb.Title, &alb.Artist, &alb.Price); err != nil {
+		if err := rows.Scan(&alb.Title, &alb.Artist, &alb.Price); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
@@ -107,7 +108,7 @@ func getalbID(a *gin.Context) {
 
 	var alb album
 	
-	rows, err := db.Query("SELECT id, title, artist, price FROM albums WHERE id = ?",id).Scan(&alb.ID,&alb.Title,&alb.Artist,&alb.Price)
+	err := db.QueryRow("SELECT id, title, artist, price FROM albums WHERE id = ?",id).Scan(&alb.ID,&alb.Title,&alb.Artist,&alb.Price)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -122,5 +123,26 @@ func getalbID(a *gin.Context) {
 			return
 		}
 	defer rows.Close()
-	a.JSON(http.StatusOK,rows)
+	a.JSON(http.StatusOK,alb)
+}
+
+func Delete_alb(a *gin.Context) {
+	id := a.Param("id")	
+
+	_, err := getalbID(a)
+
+	if err != nil {
+		a.JSON(http.StatusNotFound,gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+	_, err := db.Exec("DELETE FROM albums WHERE id = ?",id)
+	if err != nil {
+		a.JSON(http.StatusInternalServerError, gin.H{
+			"error": fmt.Sprintf("DELETE album: %v", err),
+		})
+		return		
+}
+	a.Status(http.StatusNoContent) 
 }
