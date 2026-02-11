@@ -5,13 +5,13 @@ import (
 
         "github.com/gin-gonic/gin"
 
-        "strconv"
-
 		"database/sql"
 
 	_	"github.com/go-sql-driver/mysql"
 
 		"log"
+
+		"fmt"
 )
 
 
@@ -104,11 +104,23 @@ func post_alb(a *gin.Context) {
 
 func getalbID(a *gin.Context) {
 	id := a.Param("id")
-	for _, al := range albums {
-		if al.ID == id {
-			a.IndentedJSON(http.StatusOK,al)
+
+	var alb album
+	
+	rows, err := db.Query("SELECT id, title, artist, price FROM albums WHERE id = ?",id).Scan(&alb.ID,&alb.Title,&alb.Artist,&alb.Price)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+				c.JSON(http.StatusNotFound, gin.H{
+					"error": "album not found",
+				})
+			} else {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"error": err.Error(),
+				})
+			}
 			return
 		}
-	}
-	a.IndentedJSON(http.StatusNotFound, gin.H{"message": "album not found!"})
+	defer rows.Close()
+	a.JSON(http.StatusOK,rows)
 }
