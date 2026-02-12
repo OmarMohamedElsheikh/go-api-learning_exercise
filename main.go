@@ -151,5 +151,5 @@ func Delete_alb(a *gin.Context) {
 		})
 		return		
 }
-	a.JSON(http.StatusOK,alb) 
+	a.JSON(http.StatusNoContent,alb) 
 }
