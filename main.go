@@ -27,8 +27,8 @@ type album struct {
 func main() {
 	var err error
 	
-	db, err := sql.Open("mysql", 
-	           "root@tcp(127.0.0.1:3306)/recordings")
+	db, err = sql.Open("mysql", 
+	           "go@tcp(127.0.0.1:3306)/recordings")
 	 if err != nil {
 	     log.Fatal("Error connecting to the database:", err)
 	 }
@@ -45,6 +45,7 @@ func main() {
 	r.GET("/albums", get_alb)
 	r.GET("/albums/:id",getalbID)
 	r.POST("/albums", post_alb)
+	r.DELETE("/albums/:id",Delete_alb)
 	r.Run("localhost:8080")
 }
 
@@ -60,7 +61,7 @@ func get_alb(c *gin.Context){
 	var albums []album
 
 	for rows.Next() {
-		var alb Album
+		var alb album
 		if err := rows.Scan(&alb.Title, &alb.Artist, &alb.Price); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -91,13 +92,13 @@ func post_alb(a *gin.Context) {
 	result, err := db.Exec("INSERT INTO albums (title, artist, price) VALUES (?,?,?)",newAlbum.Title, newAlbum.Artist,newAlbum.Price)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
+		a.JSON(http.StatusInternalServerError, gin.H{
 			"error": fmt.Sprintf("POST album: %v", err),
 		})
 		return
 	}
 	id, _ := result.LastInsertId()
-	newAlbum.ID = int(id)
+	newAlbum.ID = id
 	
 	a.IndentedJSON(http.StatusCreated,newAlbum)
 }
@@ -112,37 +113,43 @@ func getalbID(a *gin.Context) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-				c.JSON(http.StatusNotFound, gin.H{
+				a.JSON(http.StatusNotFound, gin.H{
 					"error": "album not found",
 				})
 			} else {
-				c.JSON(http.StatusInternalServerError, gin.H{
+				a.JSON(http.StatusInternalServerError, gin.H{
 					"error": err.Error(),
 				})
 			}
 			return
 		}
-	defer rows.Close()
 	a.JSON(http.StatusOK,alb)
 }
 
 func Delete_alb(a *gin.Context) {
 	id := a.Param("id")	
 
-	_, err := getalbID(a)
-
+	var exists int
+	err := db.QueryRow("SELECT 1 FROM albums WHERE id = ?", id).Scan(&exists)
 	if err != nil {
-		a.JSON(http.StatusNotFound,gin.H{
+		if err == sql.ErrNoRows {
+			a.JSON(http.StatusNotFound, gin.H{
+				"error": "album not found",
+			})
+			return
+		}
+		a.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
 		return
 	}
-	_, err := db.Exec("DELETE FROM albums WHERE id = ?",id)
+	
+	alb,err := db.Exec("DELETE FROM albums WHERE id = ?",id)
 	if err != nil {
 		a.JSON(http.StatusInternalServerError, gin.H{
 			"error": fmt.Sprintf("DELETE album: %v", err),
 		})
 		return		
 }
-	a.Status(http.StatusNoContent) 
+	a.JSON(http.StatusOK,alb) 
 }
