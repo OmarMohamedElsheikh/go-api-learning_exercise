@@ -73,23 +73,7 @@ CREATE TABLE albums (
 
 ---
 
-### 4️⃣ Configure Environment Variable
-
-Set your database DSN:
-
-```bash
-export DB_DSN="user:password@tcp(127.0.0.1:3306)/recordings"
-```
-
-On Windows (PowerShell):
-
-```powershell
-setx DB_DSN "user:password@tcp(127.0.0.1:3306)/recordings"
-```
-
----
-
-### 5️⃣ Run the Server
+### 4️⃣Run the Server
 
 ```bash
 go run main.go
